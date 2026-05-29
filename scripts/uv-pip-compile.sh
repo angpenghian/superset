@@ -38,17 +38,26 @@ fi
 
 ADDITIONAL_ARGS="$@"
 
+# Extract the minimum supported Python version from pyproject.toml
+# This ensures lockfiles only contain packages compatible with the oldest
+# Python version in the CI matrix (e.g. 3.10)
+MIN_PYTHON=$(grep 'requires-python' pyproject.toml | sed 's/.*>=\([0-9.]*\).*/\1/')
+PYTHON_VERSION_FLAG=""
+if [ -n "$MIN_PYTHON" ]; then
+  PYTHON_VERSION_FLAG="--python-version $MIN_PYTHON"
+fi
+
 # Generate the requirements/base.txt file
-uv pip compile pyproject.toml requirements/base.in -o requirements/base.txt $ADDITIONAL_ARGS
+uv pip compile pyproject.toml requirements/base.in -o requirements/base.txt $PYTHON_VERSION_FLAG $ADDITIONAL_ARGS
 
 # Hack to remove "Unnamed requirements are not allowed as constraints" error from base requirements
 grep --invert-match "./superset-core" requirements/base.txt > requirements/base-constraint.txt
 
 # Generate the requirements/development.txt file, making sure the base requirements are used as a constraint to keep the versions in sync. Note that `development.txt` is a Superset of `base.txt` where version for the shared libs should match their version.
-uv pip compile requirements/development.in -c requirements/base-constraint.txt -o requirements/development.txt $ADDITIONAL_ARGS
+uv pip compile requirements/development.in -c requirements/base-constraint.txt -o requirements/development.txt $PYTHON_VERSION_FLAG $ADDITIONAL_ARGS
 
 # Remove temporary base requirement file
 rm requirements/base-constraint.txt
 
 # NOTE translation is intended as a "supplemental" set of pins that can be combined with either base or dev as needed
-uv pip compile requirements/translations.in -o requirements/translations.txt $ADDITIONAL_ARGS
+uv pip compile requirements/translations.in -o requirements/translations.txt $PYTHON_VERSION_FLAG $ADDITIONAL_ARGS
