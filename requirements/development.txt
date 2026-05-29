@@ -526,7 +526,7 @@ nodeenv==1.10.0
     # via pre-commit
 numexpr==2.14.1
     # via -r requirements/base.in
-numpy==2.2.6
+numpy==1.26.4
     # via
     #   apache-superset (pyproject.toml)
     #   apache-superset
