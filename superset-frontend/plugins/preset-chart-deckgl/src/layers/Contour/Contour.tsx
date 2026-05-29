@@ -18,6 +18,7 @@
  */
 import { ContourLayer } from '@deck.gl/aggregation-layers';
 import { PolygonLayer } from '@deck.gl/layers';
+import { Position } from '@deck.gl/core';
 import { t } from '@apache-superset/core/translation';
 import { commonLayerProps } from '../common';
 import sandboxedEval from '../../utils/sandbox';
@@ -177,10 +178,8 @@ export const getLayer: GetLayerType<ContourLayer> = function ({
     contours,
     cellSize: safeCellSize,
     aggregation: aggregation.toUpperCase(),
-    getPosition: (d: {
-      position: [number, number] | [number, number, number];
-      weight: number;
-    }) => d.position,
+    getPosition: (d: { position: number[]; weight: number }) =>
+      d.position as Position,
     getWeight: (d: { weight: number }) => d.weight || 0,
     ...commonLayerProps({
       formData: fd,
