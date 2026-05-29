@@ -50,6 +50,11 @@ apispec>=6.0.0,<6.7.0
 # Opened this issue https://github.com/marshmallow-code/marshmallow-sqlalchemy/issues/665
 marshmallow-sqlalchemy>=1.3.0,<1.4.1
 
+# pandas 2.2+ enforces strict dtype type checking in DataFrame.to_sql(),
+# rejecting SQLAlchemy type objects (e.g. VARCHAR(255)) as dtype values.
+# Superset passes these objects; pin until the codebase is updated.
+pandas>=2.1.4,<2.2
+
 # needed for python 3.12 support
 openapi-schema-validator>=0.6.3
 
