@@ -1,0 +1,84 @@
+name: Devin — Fix Issue
+
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to dispatch (manual trigger)"
+        required: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  dispatch:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.label.name == 'devin-fix-this'
+    runs-on: ubuntu-latest
+    env:
+      ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number }}
+      REPO: ${{ github.repository }}
+      BRANCH: ${{ github.event.repository.default_branch || 'master' }}
+    steps:
+      - name: Validate inputs
+        run: |
+          test -n "$ISSUE_NUMBER" || { echo "issue number missing"; exit 1; }
+          case "$ISSUE_NUMBER" in
+            ''|*[!0-9]*) echo "issue number must be numeric"; exit 1 ;;
+          esac
+          case "$REPO" in
+            *[!a-zA-Z0-9._/-]*) echo "repo contains unsafe characters"; exit 1 ;;
+          esac
+          case "$BRANCH" in
+            *[!a-zA-Z0-9._/-]*) echo "branch contains unsafe characters"; exit 1 ;;
+          esac
+
+      - name: Pull dispatcher image
+        run: docker pull ghcr.io/angpenghian/devin-dispatcher:latest
+
+      - name: Dispatch to Devin
+        env:
+          DEVIN_API_KEY: ${{ secrets.DEVIN_API_KEY }}
+          DEVIN_ORG_ID: ${{ secrets.DEVIN_ORG_ID }}
+          DEVIN_GITHUB_SECRET_NAME: ${{ secrets.DEVIN_GITHUB_SECRET_NAME }}
+        run: |
+          mkdir -p reports
+          docker run --rm \
+            -e DEVIN_API_KEY -e DEVIN_ORG_ID -e DEVIN_GITHUB_SECRET_NAME \
+            -v "$PWD/reports:/app/reports" \
+            ghcr.io/angpenghian/devin-dispatcher:latest \
+            dispatch fix-issue \
+              --repo "$REPO" \
+              --branch "$BRANCH" \
+              --issue "$ISSUE_NUMBER" \
+              --reports-dir /app/reports
+
+      - name: Push run report to dispatcher repo
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.DISPATCHER_PUSH_TOKEN }}
+          DISPATCHER_REPO: ${{ secrets.DISPATCHER_REPORTS_REPO }}
+        run: |
+          if [ ! -d reports ] || [ -z "$(ls -A reports 2>/dev/null)" ]; then
+            echo "no report to push"; exit 0
+          fi
+          if [ -z "$GH_TOKEN" ] || [ -z "$DISPATCHER_REPO" ]; then
+            echo "DISPATCHER_PUSH_TOKEN or DISPATCHER_REPORTS_REPO not set; skipping push"
+            exit 0
+          fi
+          case "$DISPATCHER_REPO" in
+            *[!a-zA-Z0-9._/-]*) echo "DISPATCHER_REPO contains unsafe characters"; exit 1 ;;
+          esac
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${DISPATCHER_REPO}.git" target
+          mkdir -p target/reports
+          cp reports/*.json target/reports/
+          cd target
+          git config user.email "devin-dispatcher-bot@users.noreply.github.com"
+          git config user.name "devin-dispatcher-bot"
+          git add reports/
+          git commit -m "report: fix-issue dispatch from ${REPO}" || { echo "nothing to commit"; exit 0; }
+          git push origin main
