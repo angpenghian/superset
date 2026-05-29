@@ -72,7 +72,7 @@ dependencies = [
     "marshmallow-union>=0.1",
     "msgpack>=1.0.0, <2.0",
     "nh3>=0.2.11, <0.4",
-    "numpy>1.23.5, <2.5",
+    "numpy>1.23.5, <2.4",
     "packaging",
     # --------------------------
     # pandas and related (wanting pandas[performance] without numba as it's 100+MB and not needed)
@@ -449,13 +449,17 @@ authorized_licenses = [
     "any-osi",
     "apache license 2.0",
     "apache software",
+    "apache-2.0",
     "apache software, bsd",
     "bsd",
     "bsd-2-clause",
     "bsd-3-clause",
+    "bsd-3-clause and 0bsd and mit and zlib and cc0-1.0",
     "isc license (iscl)",
     "isc license",
+    "lgpl-2.1",
     "mit",
+    "mit and psf-2.0",
     "mit-cmu",
     "mozilla public license 2.0 (mpl 2.0)",
     "osi approved",
@@ -475,7 +479,7 @@ polyline = "2"
 # --------------------------------------------------------------
 
 # TODO REMOVE THESE DEPS FROM CODEBASE
-paramiko = "3"  # GPL
+paramiko = ">=3"  # LGPL-2.1
 pyxlsb = "1"  # GPL
 
 [tool.uv.sources]
